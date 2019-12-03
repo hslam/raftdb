@@ -70,7 +70,7 @@ func NewNode(data_dir string, host string, port ,rpc_port,raft_port int,peers []
 	raft.SetLogLevel(0)
 	n.raft_node.RegisterCommand(&SetCommand{})
 	n.raft_node.SetSnapshot(&Snapshot{})
-	n.raft_node.SetSyncType([][]int{
+	n.raft_node.SetSyncTypes([]*raft.SyncType{
 		{86400,1},
 		{14400,1000},
 		{3600,10000},
@@ -109,7 +109,7 @@ func (n *Node) ListenAndServe() error {
 	server.RegisterName("S",service)
 	//server.EnableAsyncHandleWithSize(1024*256)
 	server.EnableMultiplexingWithSize(1024*256)
-	server.EnableBatch()
+	server.SetBatch(true)
 	rpc.SetLogLevel(99)
 	if n.rpc_transport==nil{
 		n.InitRPCProxy(MaxConnsPerHost,MaxIdleConnsPerHost)
