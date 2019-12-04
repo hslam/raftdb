@@ -2,374 +2,94 @@
 
 [raftdb](https://hslam.com/git/x/raftdb  "raftdb") is an example usage of [raft](https://hslam.com/git/x/raft  "raft") library.
 
-## Build
+## Get started
+
+### Install
+```
+go get hslam.com/git/x/raftdb
+```
+
+### Build
 ```
 go build -tags=use_cgo main.go
 ```
 
-## Singleton
+### Singleton
 ```sh
 ./raftdb -h=localhost -p=7001 -c=8001 -f=9001 -d=6061 -m=8 -peers="" -path=./raftdb.1
 ```
-## Three nodes
+### Three nodes
 ```sh
 ./raftdb -h=localhost -p=7001 -c=8001 -f=9001 -d=6061 -m=8 -peers=localhost:9001,localhost:9002,localhost:9003 -path=./raftdb.1
 ./raftdb -h=localhost -p=7002 -c=8002 -f=9002 -d=6062 -m=8 -peers=localhost:9001,localhost:9002,localhost:9003 -path=./raftdb.2
 ./raftdb -h=localhost -p=7003 -c=8003 -f=9003 -d=6063 -m=8 -peers=localhost:9001,localhost:9002,localhost:9003 -path=./raftdb.3
 ```
-Http Set
+**HTTP SET**
 ```
 curl -XPOST http://localhost:7001/db/foo -d 'bar'
 ```
-Http Get
+**HTTP GET**
 ```
 curl http://localhost:7001/db/foo
 ```
 
 ## Benchmark
 
-
-### Define
-* **trans**     transport
-* **tps**     requests per second
-* **fast**     fastest(ms)
-* **med**     median(ms)
-* **avg**     average(ms)
-* **p99**     99th percentile time (ms)
-* **slow**     slowest(ms)
-
+#### Linux Environment
+* **CPU** 12 Cores 3.1 GHz
+* **Memory** 24 GiB
 
 ```
-system  cluster     operation   trans   tps     avg     fast    med     p99     slow
-Mac     Singleton   READINDEX   HTTP    10179   19.62   8.33    19.19   39.07   77.90
-Mac     Singleton   READINDEX   RPC     90342   43.93   15.64   37.03   103.13  117.00
-Mac     Singleton   WRITE       HTTP    10148   19.69   8.04    19.22   40.15   80.52
-Mac     Singleton   WRITE       RPC     52120   76.24   14.32   68.16   178.10  217.68
-Mac     ThreeNodes  READINDEX   HTTP    4281    13.39   46.96   46.67   67.34   90.54
-Mac     ThreeNodes  READINDEX   RPC     51943   75.95   15.47   64.37   169.92  175.86
-Mac     ThreeNodes  WRITE       HTTP    4151    48.14   10.85   47.81   71.07   104.61
-Mac     ThreeNodes  WRITE       RPC     35560   111.83  28.83   107.06  255.75  306.85
-Linux   Singleton   READINDEX   HTTP    74456   6.63    2.62    6.23    12.12   110.90
-Linux   Singleton   READINDEX   RPC     293865  13.14   4.09    12.14   31.22   35.09
-Linux   Singleton   WRITE       HTTP    57488   8.79    2.19    7.68    24.00   119.71
-Linux   Singleton   WRITE       RPC     132045  30.21   6.39    27.59   70.14   86.11
-Linux   ThreeNodes  READINDEX   HTTP    43053   11.72   2.83    7.43    58.92   1125.58
-Linux   ThreeNodes  READINDEX   RPC     267685  14.65   4.36    13.47   31.59   44.72
-Linux   ThreeNodes  WRITE       HTTP    35241   14.42   4.21    10.41   73.28   114.84
-Linux   ThreeNodes  WRITE       RPC     103035  38.82   8.91    38.90   76.74   88.05
+cluster    operation transport requests/s average(ms) fastest(ms) median(ms) p99(ms) slowest(ms)
+Singleton  ReadIndex HTTP      74456      6.63        2.62        6.23       12.12   110.90
+Singleton  ReadIndex RPC       293865     13.14       4.09        12.14      31.22   35.09
+Singleton  Write     HTTP      57488      8.79        2.19        7.68       24.00   119.71
+Singleton  Write     RPC       132045     30.21       6.39        27.59      70.14   86.11
+ThreeNodes ReadIndex HTTP      43053      11.72       2.83        7.43       58.92   1125.58
+ThreeNodes ReadIndex RPC       267685     14.65       4.36        13.47      31.59   44.72
+ThreeNodes Write     HTTP      35241      14.42       4.21        10.41      73.28   114.84
+ThreeNodes Write     RPC       103035     38.82       8.91        38.90      76.74    88.05
 ```
 
 vim benchmark.sh
 ```sh
 #!/bin/sh
 
-nohup ./raftdb -h=localhost -p=7001 -c=8001 -f=9001 -d=6061 -m=8 -peers="" -path=./tmp/default.raftdb.1  >> ./tmp/default.out.1.log 2>&1 &
+nohup ./raftdb -h=localhost -p=7001 -c=8001 -f=9001 -d=6061 -m=32 -peers="" -path=./tmp/default.raftdb.1  >> ./tmp/default.out.1.log 2>&1 &
 sleep 30s
 curl -XPOST http://localhost:7001/db/foo -d 'bar'
 sleep 3s
 curl http://localhost:7001/db/foo
 sleep 3s
-./http_read_index -p=7001 -parallel=1 -total=100000 -clients=200 -bar=false
+./http_read_index -p=7001 -parallel=1 -total=1000000 -clients=512 -bar=false
 sleep 10s
-./rpc_read_index -network=tcp -codec=pb -compress=gzip -h=127.0.0.1 -p=8001 -parallel=512 -total=100000 -multiplexing=true -batch=true -batch_async=true -clients=8 -bar=false
+./rpc_read_index -network=tcp -codec=pb -compress=gzip -h=127.0.0.1 -p=8001 -parallel=512 -total=1000000 -multiplexing=true -batch=true -batch_async=true -clients=8 -bar=false
 sleep 10s
-./http_write -p=7001 -parallel=1 -total=100000 -clients=200 -bar=false
+./http_write -p=7001 -parallel=1 -total=1000000 -clients=512 -bar=false
 sleep 10s
-./rpc_write -network=tcp -codec=pb -compress=gzip -h=127.0.0.1 -p=8001 -parallel=512 -total=100000 -multiplexing=true -batch=true -batch_async=true -clients=8 -bar=false
+./rpc_write -network=tcp -codec=pb -compress=gzip -h=127.0.0.1 -p=8001 -parallel=512 -total=1000000 -multiplexing=true -batch=true -batch_async=true -clients=8 -bar=false
 sleep 10s
-
 killall raftdb
-
 sleep 3s
-
-nohup ./raftdb -h=localhost -p=7001 -c=8001 -f=9001 -d=6061 -m=8 -peers=localhost:9001,localhost:9002,localhost:9003 -path=./tmp/raftdb.1  >> ./tmp/out.1.log 2>&1 &
+nohup ./raftdb -h=localhost -p=7001 -c=8001 -f=9001 -d=6061 -m=32 -peers=localhost:9001,localhost:9002,localhost:9003 -path=./tmp/raftdb.1  >> ./tmp/out.1.log 2>&1 &
 sleep 3s
-nohup ./raftdb -h=localhost -p=7002 -c=8002 -f=9002 -d=6062 -m=8 -peers=localhost:9001,localhost:9002,localhost:9003 -path=./tmp/raftdb.2  >> ./tmp/out.2.log 2>&1 &
-nohup ./raftdb -h=localhost -p=7003 -c=8003 -f=9003 -d=6063 -m=8 -peers=localhost:9001,localhost:9002,localhost:9003 -path=./tmp/raftdb.3  >> ./tmp/out.3.log 2>&1 &
+nohup ./raftdb -h=localhost -p=7002 -c=8002 -f=9002 -d=6062 -m=32 -peers=localhost:9001,localhost:9002,localhost:9003 -path=./tmp/raftdb.2  >> ./tmp/out.2.log 2>&1 &
+nohup ./raftdb -h=localhost -p=7003 -c=8003 -f=9003 -d=6063 -m=32 -peers=localhost:9001,localhost:9002,localhost:9003 -path=./tmp/raftdb.3  >> ./tmp/out.3.log 2>&1 &
 sleep 30s
 curl -XPOST http://localhost:7001/db/foo -d 'bar'
 sleep 3s
 curl http://localhost:7001/db/foo
 sleep 3s
-./http_read_index -p=7001 -parallel=1 -total=100000 -clients=200 -bar=false
+./http_read_index -p=7001 -parallel=1 -total=1000000 -clients=512 -bar=false
 sleep 10s
-./rpc_read_index -network=tcp -codec=pb -compress=gzip -h=127.0.0.1 -p=8001 -parallel=512 -total=100000 -multiplexing=true -batch=true -batch_async=true -clients=8 -bar=false
+./rpc_read_index -network=tcp -codec=pb -compress=gzip -h=127.0.0.1 -p=8001 -parallel=512 -total=1000000 -multiplexing=true -batch=true -batch_async=true -clients=8 -bar=false
 sleep 10s
-./http_write -p=7001 -parallel=1 -total=100000 -clients=200 -bar=false
+./http_write -p=7001 -parallel=1 -total=1000000 -clients=512 -bar=false
 sleep 10s
-./rpc_write -network=tcp -codec=pb -compress=gzip -h=127.0.0.1 -p=8001 -parallel=512 -total=100000 -multiplexing=true -batch=true -batch_async=true -clients=8 -bar=false
+./rpc_write -network=tcp -codec=pb -compress=gzip -h=127.0.0.1 -p=8001 -parallel=512 -total=1000000 -multiplexing=true -batch=true -batch_async=true -clients=8 -bar=false
 sleep 10s
-
 killall raftdb
-sleep 3s
 ```
-
-### Mac Environment
-* **CPU** 4 Cores 2.9 GHz
-* **Memory** 8 GiB
-
-#### HTTP READINDEX SINGLETON BENCHMARK
-```
-Summary:
-	Clients:	200
-	Parallel calls per client:	1
-	Total calls:	100000
-	Total time:	9.82s
-	Requests per second:	10179.94
-	Fastest time for request:	8.33ms
-	Average time per request:	19.62ms
-	Slowest time for request:	77.90ms
-
-Time:
-	0.1%	time for request:	10.59ms
-	1%	time for request:	12.01ms
-	5%	time for request:	13.63ms
-	10%	time for request:	14.66ms
-	25%	time for request:	16.71ms
-	50%	time for request:	19.19ms
-	75%	time for request:	21.52ms
-	90%	time for request:	24.35ms
-	95%	time for request:	26.69ms
-	99%	time for request:	39.07ms
-	99.9%	time for request:	53.84ms
-
-Result:
-	Response ok:	99990 (99.99%)
-	Errors:	10 (0.01%)
-```
-#### RPC READINDEX SINGLETON BENCHMARK
-```
-Summary:
-	Clients:	8
-	Parallel calls per client:	512
-	Total calls:	100000
-	Total time:	1.11s
-	Requests per second:	90342.32
-	Fastest time for request:	15.64ms
-	Average time per request:	43.93ms
-	Slowest time for request:	117.00ms
-
-Time:
-	0.1%	time for request:	17.03ms
-	1%	time for request:	21.91ms
-	5%	time for request:	24.42ms
-	10%	time for request:	25.86ms
-	25%	time for request:	29.73ms
-	50%	time for request:	37.03ms
-	75%	time for request:	56.18ms
-	90%	time for request:	65.65ms
-	95%	time for request:	77.28ms
-	99%	time for request:	103.13ms
-	99.9%	time for request:	115.64ms
-
-Result:
-	Response ok:	100000 (100.00%)
-	Errors:	0 (0.00%)
-```
-#### HTTP WRITE SINGLETON BENCHMARK
-```
-Summary:
-	Clients:	200
-	Parallel calls per client:	1
-	Total calls:	100000
-	Total time:	9.85s
-	Requests per second:	10148.56
-	Fastest time for request:	8.04ms
-	Average time per request:	19.69ms
-	Slowest time for request:	80.52ms
-
-Time:
-	0.1%	time for request:	10.33ms
-	1%	time for request:	11.61ms
-	5%	time for request:	13.40ms
-	10%	time for request:	14.57ms
-	25%	time for request:	16.66ms
-	50%	time for request:	19.22ms
-	75%	time for request:	21.64ms
-	90%	time for request:	24.17ms
-	95%	time for request:	26.31ms
-	99%	time for request:	40.15ms
-	99.9%	time for request:	67.27ms
-
-Result:
-	Response ok:	100000 (100.00%)
-	Errors:	0 (0.00%)
-```
-#### RPC WRITE SINGLETON BENCHMARK
-```
-Summary:
-	Clients:	8
-	Parallel calls per client:	512
-	Total calls:	100000
-	Total time:	1.92s
-	Requests per second:	52120.31
-	Fastest time for request:	14.32ms
-	Average time per request:	76.24ms
-	Slowest time for request:	217.68ms
-
-Time:
-	0.1%	time for request:	20.70ms
-	1%	time for request:	29.58ms
-	5%	time for request:	38.58ms
-	10%	time for request:	43.33ms
-	25%	time for request:	53.16ms
-	50%	time for request:	68.16ms
-	75%	time for request:	92.40ms
-	90%	time for request:	119.66ms
-	95%	time for request:	143.28ms
-	99%	time for request:	178.10ms
-	99.9%	time for request:	198.92ms
-
-Result:
-	Response ok:	100000 (100.00%)
-	Errors:	0 (0.00%)
-```
-
-#### HTTP READINDEX THREE NODES BENCHMARK
-```
-Summary:
-	Clients:	200
-	Parallel calls per client:	1
-	Total calls:	100000
-	Total time:	23.36s
-	Requests per second:	4281.05
-	Fastest time for request:	13.39ms
-	Average time per request:	46.67ms
-	Slowest time for request:	90.54ms
-
-Time:
-	0.1%	time for request:	17.19ms
-	1%	time for request:	24.86ms
-	5%	time for request:	33.15ms
-	10%	time for request:	35.96ms
-	25%	time for request:	40.63ms
-	50%	time for request:	46.96ms
-	75%	time for request:	52.49ms
-	90%	time for request:	57.01ms
-	95%	time for request:	60.56ms
-	99%	time for request:	67.34ms
-	99.9%	time for request:	77.95ms
-
-Result:
-	Response ok:	100000 (100.00%)
-	Errors:	0 (0.00%)
-
-```
-
-#### RPC READINDEX THREE NODES BENCHMARK
-```
-Summary:
-	Clients:	8
-	Parallel calls per client:	512
-	Total calls:	100000
-	Total time:	1.93s
-	Requests per second:	51943.17
-	Fastest time for request:	15.47ms
-	Average time per request:	75.95ms
-	Slowest time for request:	175.86ms
-
-Time:
-	0.1%	time for request:	18.25ms
-	1%	time for request:	21.86ms
-	5%	time for request:	35.67ms
-	10%	time for request:	41.07ms
-	25%	time for request:	52.78ms
-	50%	time for request:	64.37ms
-	75%	time for request:	101.10ms
-	90%	time for request:	116.75ms
-	95%	time for request:	143.79ms
-	99%	time for request:	169.92ms
-	99.9%	time for request:	175.83ms
-
-Result:
-	Response ok:	100000 (100.00%)
-	Errors:	0 (0.00%)```
-```
-#### HTTP WRITE THREE NODES BENCHMARK
-```
-Summary:
-	Clients:	200
-	Parallel calls per client:	1
-	Total calls:	100000
-	Total time:	24.09s
-	Requests per second:	4151.37
-	Fastest time for request:	10.85ms
-	Average time per request:	48.14ms
-	Slowest time for request:	104.61ms
-
-Time:
-	0.1%	time for request:	23.20ms
-	1%	time for request:	30.86ms
-	5%	time for request:	35.67ms
-	10%	time for request:	38.17ms
-	25%	time for request:	42.44ms
-	50%	time for request:	47.81ms
-	75%	time for request:	53.37ms
-	90%	time for request:	57.93ms
-	95%	time for request:	61.26ms
-	99%	time for request:	71.07ms
-	99.9%	time for request:	95.43ms
-
-Result:
-	Response ok:	100000 (100.00%)
-	Errors:	0 (0.00%)
-```
-
-#### RPC WRITE THREE NODES BENCHMARK
-```
-Summary:
-	Clients:	8
-	Parallel calls per client:	512
-	Total calls:	100000
-	Total time:	2.81s
-	Requests per second:	35560.85
-	Fastest time for request:	28.83ms
-	Average time per request:	111.83ms
-	Slowest time for request:	306.85ms
-
-Time:
-	0.1%	time for request:	38.97ms
-	1%	time for request:	50.30ms
-	5%	time for request:	58.22ms
-	10%	time for request:	65.54ms
-	25%	time for request:	77.74ms
-	50%	time for request:	107.06ms
-	75%	time for request:	133.80ms
-	90%	time for request:	163.19ms
-	95%	time for request:	193.73ms
-	99%	time for request:	255.75ms
-	99.9%	time for request:	306.77ms
-
-Result:
-	Response ok:	100000 (100.00%)
-	Errors:	0 (0.00%)
-```
-#### ETCD WRITE THREE NODES BENCHMARK
-```
-Summary:
-	Conns:	8
-	Clients:	512
-	Total calls:	100000
-	Total time:	8.69s
-	Requests per second:	11497.77
-	Fastest time for request:	9.10ms
-	Average time per request:	44.20ms
-	Slowest time for request:	133.40ms
-
-Time:
-	10%	time for request:	31.30ms
-	50%	time for request:	42.30ms
-	90%	time for request:	58.90ms
-	99%	time for request:	80.20ms
-
-Result:
-	Response ok:	100000 (100.00%)
-	Errors:	0 (0.00%)
-```
-
-#### Linux Environment
-* **CPU** 12 Cores 3.1 GHz
-* **Memory** 24 GiB
 
 #### HTTP READINDEX SINGLETON BENCHMARK
 ```
@@ -630,4 +350,8 @@ Result:
 	Errors:	0 (0.00%)
 ```
 
+## Licence
+This package is licenced under a MIT licence (Copyright (c) 2019 Mort Huang)
 
+## Authors
+raft was written by Mort Huang.
