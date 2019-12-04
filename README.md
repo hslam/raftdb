@@ -1,19 +1,17 @@
-## raftdb
+# raftdb
 
 [raftdb](https://hslam.com/git/x/raftdb  "raftdb") is an example usage of [raft](https://hslam.com/git/x/raft  "raft") library.
 
-
-build
+## Build
 ```
 go build -tags=use_cgo main.go
-
 ```
 
-Singleton
+## Singleton
 ```sh
 ./raftdb -h=localhost -p=7001 -c=8001 -f=9001 -d=6061 -m=8 -peers="" -path=./raftdb.1
 ```
-Three nodes
+## Three nodes
 ```sh
 ./raftdb -h=localhost -p=7001 -c=8001 -f=9001 -d=6061 -m=8 -peers=localhost:9001,localhost:9002,localhost:9003 -path=./raftdb.1
 ./raftdb -h=localhost -p=7002 -c=8002 -f=9002 -d=6062 -m=8 -peers=localhost:9001,localhost:9002,localhost:9003 -path=./raftdb.2
@@ -28,7 +26,8 @@ Http Get
 curl http://localhost:7001/db/foo
 ```
 
-Benchmark
+## Benchmark
+
 ```sh
 #!/bin/sh
 
