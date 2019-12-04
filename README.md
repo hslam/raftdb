@@ -354,4 +354,4 @@ Result:
 This package is licenced under a MIT licence (Copyright (c) 2019 Mort Huang)
 
 ## Authors
-raft was written by Mort Huang.
+raftdb was written by Mort Huang.
