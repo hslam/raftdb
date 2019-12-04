@@ -8,10 +8,6 @@ build
 go build -tags=use_cgo main.go
 
 ```
-build for linux
-```
-docker run --rm -v $GOPATH/src:/go/src golang:1.12 bash -c 'cd $GOPATH/src/hslam.com/git/x/raft/example/raftdb && CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -tags=use_cgo main.go'
-```
 
 Singleton
 ```sh
