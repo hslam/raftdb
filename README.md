@@ -1,6 +1,6 @@
 # raftdb
 
-[raftdb](https://hslam.com/git/x/raftdb  "raftdb") is an example usage of [raft](https://hslam.com/git/x/raft  "raft") library.
+The raftdb is an example usage of [raft](https://hslam.com/git/x/raft  "raft") library.
 
 ## Get started
 
