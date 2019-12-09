@@ -387,7 +387,7 @@ Result:
 ```
 
 ## Licence
-This package is licenced under a MIT licence (Copyright (c) 2019 Mort Huang)
+This package is licenced under a MIT licence (Copyright (c) 2019 Meng Huang)
 
 ## Authors
-raftdb was written by Mort Huang.
+raftdb was written by Meng Huang.
