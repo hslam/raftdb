@@ -1,7 +1,7 @@
 package node
 
 import (
-	"hslam.com/git/x/raft"
+	"github.com/hslam/raft"
 )
 
 func newSetCommand(key string, value string) raft.Command {

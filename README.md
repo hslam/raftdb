@@ -1,12 +1,12 @@
 # raftdb
 
-The raftdb is an example usage of [raft](https://hslam.com/git/x/raft  "raft") library.
+The raftdb is an example usage of [raft](https://github.com/hslam/raft  "raft") library.
 
 ## Get started
 
 ### Install
 ```
-go get hslam.com/git/x/raftdb
+go get github.com/hslam/raftdb
 ```
 
 ### Build

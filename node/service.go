@@ -1,7 +1,7 @@
 package node
 
 import (
-	"hslam.com/git/x/raft"
+	"github.com/hslam/raft"
 	"net/url"
 	"strconv"
 )

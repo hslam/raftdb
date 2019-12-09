@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"hslam.com/git/x/raftdb/node"
+	"github.com/hslam/raftdb/node"
 	"log"
 	"strings"
 	_ "net/http/pprof"

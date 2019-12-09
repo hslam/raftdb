@@ -2,7 +2,7 @@ package main
 
 import (
 	"net/http"
-	"hslam.com/git/x/stats"
+	"github.com/hslam/stats"
 	"math/rand"
 	"time"
 	"flag"

@@ -4,7 +4,7 @@ import (
 	"io"
 	"io/ioutil"
 	"encoding/json"
-	"hslam.com/git/x/raft"
+	"github.com/hslam/raft"
 )
 
 type Snapshot struct {}

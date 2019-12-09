@@ -1,9 +1,9 @@
 package main
 
 import (
-	"hslam.com/git/x/rpc"
-	"hslam.com/git/x/stats"
-	"hslam.com/git/x/raftdb/node"
+	"github.com/hslam/rpc"
+	"github.com/hslam/stats"
+	"github.com/hslam/raftdb/node"
 	"math/rand"
 	"strconv"
 	"runtime"
