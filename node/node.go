@@ -108,22 +108,21 @@ func (n *Node) ListenAndServe() error {
 	service.node = n
 	server := rpc.NewServer()
 	server.RegisterName("S", service)
-	server.SetSize(1024 * 256)
+	server.SetMultiplexing(true)
 	server.SetBatching(true)
-	rpc.SetLogLevel(99)
+	rpc.SetLogLevel(rpc.OffLevel)
 	if n.rpc_transport == nil {
 		n.InitRPCProxy(MaxConnsPerHost, MaxIdleConnsPerHost)
 	}
-
-	go server.ListenAndServe("tcp", fmt.Sprintf(":%d", n.rpc_port))
+	go func() { fmt.Println(server.ListenAndServe("tcp", fmt.Sprintf(":%d", n.rpc_port))) }()
 	return n.http_server.ListenAndServe()
 }
 func (n *Node) InitRPCProxy(MaxConnsPerHost int, MaxIdleConnsPerHost int) {
 	opts := rpc.DefaultOptions()
-	opts.SetRetry(false)
-	opts.SetCompressType("gzip")
 	opts.SetMultiplexing(true)
 	opts.SetBatching(true)
+	opts.SetRetry(false)
+	opts.SetCompressType("gzip")
 	n.rpc_transport = rpc.NewTransport(MaxConnsPerHost, MaxIdleConnsPerHost, network, codec, opts)
 }
 func (n *Node) uri() string {
