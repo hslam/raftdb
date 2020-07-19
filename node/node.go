@@ -18,7 +18,7 @@ import (
 const (
 	network             = "tcp"
 	codec               = "pb"
-	MaxConnsPerHost     = 8
+	MaxConnsPerHost     = 1
 	MaxIdleConnsPerHost = 0
 )
 
@@ -108,22 +108,19 @@ func (n *Node) ListenAndServe() error {
 	service.node = n
 	server := rpc.NewServer()
 	server.RegisterName("S", service)
-	server.SetMultiplexing(true)
-	server.SetBatching(true)
 	rpc.SetLogLevel(rpc.OffLevel)
 	if n.rpc_transport == nil {
 		n.InitRPCProxy(MaxConnsPerHost, MaxIdleConnsPerHost)
 	}
-	go func() { fmt.Println(server.ListenAndServe("tcp", fmt.Sprintf(":%d", n.rpc_port))) }()
+	go func() { fmt.Println(server.Listen("tcp", fmt.Sprintf(":%d", n.rpc_port), codec)) }()
 	return n.http_server.ListenAndServe()
 }
 func (n *Node) InitRPCProxy(MaxConnsPerHost int, MaxIdleConnsPerHost int) {
-	opts := rpc.DefaultOptions()
-	opts.SetMultiplexing(true)
-	opts.SetBatching(true)
-	opts.SetRetry(false)
-	opts.SetCompressType("gzip")
-	n.rpc_transport = rpc.NewTransport(MaxConnsPerHost, MaxIdleConnsPerHost, network, codec, opts)
+	n.rpc_transport = &rpc.Transport{
+		MaxConnsPerHost:     MaxConnsPerHost,
+		MaxIdleConnsPerHost: MaxIdleConnsPerHost,
+		Options:             &rpc.Options{Network: network, Codec: codec},
+	}
 }
 func (n *Node) uri() string {
 	return fmt.Sprintf("http://%s:%d", n.host, n.port)

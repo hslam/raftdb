@@ -8,79 +8,46 @@ import (
 	"github.com/hslam/stats"
 	"log"
 	"math/rand"
-	"runtime"
-	"strconv"
 )
 
 var network string
-var codec string
-var compress string
-var host string
-var port int
 var addr string
-var parallel int
-var batch bool
-var multiplexing bool
+var codec string
 var clients int
-var total_calls int
+var total int
+var parallel int
 var bar bool
 
 func init() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
-	flag.StringVar(&network, "network", "tcp", "network: -network=tcp|ws|fast|http|http2|quic|udp")
-	flag.StringVar(&codec, "codec", "pb", "codec: -codec=pb|json|xml")
-	flag.StringVar(&compress, "compress", "gzip", "compress: -compress=no|flate|zlib|gzip")
-	flag.StringVar(&host, "h", "127.0.0.1", "host: -h=127.0.0.1")
-	flag.IntVar(&port, "p", 8001, "port: -p=8001")
-	flag.IntVar(&parallel, "parallel", 512, "parallel: -parallel=512")
-	flag.IntVar(&total_calls, "total", 100000, "total_calls: -total=10000")
-	flag.BoolVar(&batch, "batch", true, "batch: -batch=false")
-	flag.BoolVar(&multiplexing, "multiplexing", true, "multiplexing: -multiplexing=false")
-	flag.IntVar(&clients, "clients", 2, "num: -clients=1")
-	flag.BoolVar(&bar, "bar", false, "bar: -bar=true")
-	log.SetFlags(0)
+	flag.StringVar(&network, "network", "tcp", "-network=tcp")
+	flag.StringVar(&addr, "addr", ":8001", "-addr=:9999")
+	flag.StringVar(&codec, "codec", "pb", "-codec=code")
+	flag.IntVar(&total, "total", 1000000, "-total=100000")
+	flag.IntVar(&parallel, "parallel", 512, "-parallel=1")
+	flag.IntVar(&clients, "clients", 2, "-clients=1")
+	flag.BoolVar(&bar, "bar", true, "-bar=true")
 	flag.Parse()
-	addr = host + ":" + strconv.Itoa(port)
 	stats.SetBar(bar)
+	fmt.Printf("./client -network=%s -addr=%s -codec=%s -total=%d -parallel=%d -clients=%d\n", network, addr, codec, total, parallel, clients)
 }
 
 func main() {
-	fmt.Printf("./client -network=%s -codec=%s -compress=%s -h=%s -p=%d -parallel=%d -total=%d -multiplexing=%t -batch=%t -clients=%d\n", network, codec, compress, host, port, parallel, total_calls, multiplexing, batch, clients)
-	var wrkClients []stats.Client
-	opts := rpc.DefaultOptions()
-	opts.SetMaxRequests(parallel)
-	opts.SetCompressType(compress)
-	opts.SetBatching(batch)
-	opts.SetMultiplexing(multiplexing)
-	if clients > 1 {
-		pool, err := rpc.DialsWithOptions(clients, network, addr, codec, opts)
-		if err != nil {
-			log.Fatalln("dailing error: ", err)
-		}
-		wrkClients = make([]stats.Client, len(pool.All()))
-		for i := 0; i < len(pool.All()); i++ {
-			wrkClients[i] = &WrkClient{pool.All()[i]}
-			conn := pool.All()[i]
-			defer conn.Close()
-		}
-		parallel = pool.GetMaxRequests()
-	} else if clients == 1 {
-		conn, err := rpc.DialWithOptions(network, addr, codec, opts)
-		if err != nil {
-			log.Fatalln("dailing error: ", err)
-		}
-		defer conn.Close()
-		parallel = conn.GetMaxRequests()
-		wrkClients = make([]stats.Client, 1)
-		wrkClients[0] = &WrkClient{conn}
-	} else {
+	if clients < 1 || parallel < 1 || total < 1 {
 		return
 	}
-	stats.StartPrint(parallel, total_calls, wrkClients)
+	var wrkClients []stats.Client
+	for i := 0; i < clients; i++ {
+		if conn, err := rpc.Dial(network, addr, codec); err != nil {
+			log.Fatalln("dailing error: ", err)
+		} else {
+			wrkClients = append(wrkClients, &WrkClient{conn})
+		}
+	}
+	stats.StartPrint(parallel, total, wrkClients)
 }
 
 type WrkClient struct {
-	Conn rpc.Client
+	*rpc.Client
 }
 
 func (c *WrkClient) Call() (int64, int64, bool) {
@@ -88,7 +55,7 @@ func (c *WrkClient) Call() (int64, int64, bool) {
 	B := RandString(32)
 	req := &node.Request{Key: A, Value: B}
 	var res node.Response
-	c.Conn.Call("S.Set", req, &res)
+	c.Client.Call("S.Set", req, &res)
 	if res.Ok == true {
 		return int64(len(A) + len(B)), 0, true
 	}
