@@ -80,7 +80,7 @@ func NewNode(data_dir string, host string, port, rpc_port, raft_port int, peers 
 		{900, 200000},
 		{60, 5000000},
 	})
-	n.raft_node.SetCodec(&raft.ProtoCodec{})
+	n.raft_node.SetCodec(&raft.GOGOPBCodec{})
 	n.raft_node.GzipSnapshot()
 	n.http_server = &http.Server{
 		Addr:    fmt.Sprintf(":%d", n.port),
