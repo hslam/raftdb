@@ -44,7 +44,7 @@ type Node struct {
 	data_dir      string
 	mux           *mux.Mux
 	render        *render.Render
-	raft_node     *raft.Node
+	raft_node     raft.Node
 	http_server   *http.Server
 	rpc_transport *rpc.Transport
 	db            *DB
@@ -81,7 +81,7 @@ func NewNode(data_dir string, host string, port, rpc_port, raft_port int, peers 
 		{60, 5000000},
 	})
 	n.raft_node.SetCodec(&raft.GOGOPBCodec{})
-	n.raft_node.GzipSnapshot()
+	n.raft_node.SetGzipSnapshot(true)
 	n.http_server = &http.Server{
 		Addr:    fmt.Sprintf(":%d", n.port),
 		Handler: n.mux,
