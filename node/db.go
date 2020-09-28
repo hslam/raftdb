@@ -14,15 +14,17 @@ func newDB() *DB {
 		data: make(map[string]string),
 	}
 }
-func (db *DB) Data()map[string]string {
+
+func (db *DB) Data() map[string]string {
 	db.mutex.RLock()
 	defer db.mutex.RUnlock()
 	return db.data
 }
+
 func (db *DB) SetData(data map[string]string) {
 	db.mutex.RLock()
 	defer db.mutex.RUnlock()
-	db.data=data
+	db.data = data
 }
 
 func (db *DB) Set(key string, value string) {
@@ -30,6 +32,7 @@ func (db *DB) Set(key string, value string) {
 	defer db.mutex.Unlock()
 	db.data[key] = value
 }
+
 func (db *DB) Get(key string) string {
 	db.mutex.RLock()
 	defer db.mutex.RUnlock()

@@ -1,37 +1,40 @@
 package node
 
 import (
-	"io"
-	"io/ioutil"
 	"encoding/json"
 	"github.com/hslam/raft"
+	"io"
+	"io/ioutil"
 )
 
-type Snapshot struct {}
+type Snapshot struct{}
 
 func NewSnapshot() raft.Snapshot {
 	return &Snapshot{}
 }
 
-func (s *Snapshot) Save(context interface{},w io.Writer) (int, error){
+func (s *Snapshot) Save(context interface{}, w io.Writer) (int, error) {
 	db := context.(*DB)
 	var data map[string]string
-	data=db.Data()
-	raw,err:=json.Marshal(data)
-	if err!=nil{
-		return 0,err
+	data = db.Data()
+	raw, err := json.Marshal(data)
+	if err != nil {
+		return 0, err
 	}
 	return w.Write(raw)
 }
 
-func (s *Snapshot) Recover(context interface{},r io.Reader) (int, error){
+func (s *Snapshot) Recover(context interface{}, r io.Reader) (int, error) {
 	db := context.(*DB)
 	var data map[string]string
-	raw,err:=ioutil.ReadAll(r)
-	err=json.Unmarshal(raw, &data)
-	if err!=nil{
-		return len(raw),err
+	raw, err := ioutil.ReadAll(r)
+	if err != nil {
+		return len(raw), err
+	}
+	err = json.Unmarshal(raw, &data)
+	if err != nil {
+		return len(raw), err
 	}
 	db.SetData(data)
-	return len(raw),nil
+	return len(raw), nil
 }

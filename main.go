@@ -2,50 +2,50 @@ package main
 
 import (
 	"flag"
+	"github.com/hslam/raftdb/node"
 	"log"
-	"strings"
+	"net/http"
+	_ "net/http/pprof"
 	"runtime"
 	"strconv"
-	_ "net/http/pprof"
-	"net/http"
-	"github.com/hslam/raftdb/node"
+	"strings"
 )
 
-var(
-	host string
-	port int
-	rpc_port int
-	raft_port int
-	debug bool
-	debug_port int
-	addrs string
-	join string
-	data_dir string
-	max int
+var (
+	host      string
+	port      int
+	rpcPort   int
+	raftPort  int
+	debug     bool
+	debugPort int
+	addrs     string
+	join      string
+	dataDir   string
+	max       int
 )
 
 func init() {
 	flag.StringVar(&host, "h", "localhost", "hostname")
 	flag.IntVar(&port, "p", 7001, "port")
-	flag.IntVar(&rpc_port, "c", 8001, "port")
-	flag.IntVar(&raft_port, "f", 9001, "port")
+	flag.IntVar(&rpcPort, "c", 8001, "port")
+	flag.IntVar(&raftPort, "f", 9001, "port")
 	flag.StringVar(&addrs, "peers", "", "host:port,host:port")
 	flag.BoolVar(&debug, "debug", true, "debug: -debug=false")
-	flag.IntVar(&debug_port, "d", 6061, "debug_port: -dp=6060")
+	flag.IntVar(&debugPort, "d", 6061, "debug_port: -dp=6060")
 	flag.StringVar(&join, "join", "", "host:port")
-	flag.StringVar(&data_dir, "path", "raft.1", "path")
+	flag.StringVar(&dataDir, "path", "raft.1", "path")
 	flag.IntVar(&max, "m", 8, "MaxConnsPerHost: -m=8")
 	runtime.GOMAXPROCS(runtime.NumCPU())
 }
 
 func main() {
 	flag.Parse()
-	go func() {if debug{log.Println(http.ListenAndServe(":"+strconv.Itoa(debug_port), nil))}}()
+	go http.ListenAndServe(":"+strconv.Itoa(debugPort), nil)
 	var peers []string
 	if addrs != "" {
 		peers = strings.Split(addrs, ",")
 	}
-	s := node.NewNode(data_dir, host, port,rpc_port,raft_port,peers,join)
-	s.InitRPCProxy(max,0)
+	s := node.NewNode(dataDir, host, port, rpcPort, raftPort, peers, join)
+	s.InitRPCProxy(max, 0)
 	log.Fatal(s.ListenAndServe())
 }

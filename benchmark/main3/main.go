@@ -4,18 +4,18 @@ import (
 	"flag"
 	"github.com/hslam/raftdb/node"
 	"log"
-	"strings"
-	_ "net/http/pprof"
 	"net/http"
+	_ "net/http/pprof"
+	"strings"
 )
 
-var(
-	host string
-	port int
-	rpc_port int
+var (
+	host      string
+	port      int
+	rpc_port  int
 	raft_port int
-	addrs string
-	data_dir string
+	addrs     string
+	data_dir  string
 )
 
 func init() {
@@ -28,13 +28,13 @@ func init() {
 }
 
 func main() {
-	go func() {log.Println(http.ListenAndServe(":6063", nil))}()
+	go func() { log.Println(http.ListenAndServe(":6063", nil)) }()
 
 	flag.Parse()
 	var peers []string
 	if addrs != "" {
 		peers = strings.Split(addrs, ",")
 	}
-	s := node.NewNode(data_dir, host, port,rpc_port,raft_port,peers,"")
+	s := node.NewNode(data_dir, host, port, rpc_port, raft_port, peers, "")
 	log.Fatal(s.ListenAndServe())
 }
