@@ -71,7 +71,7 @@ func NewNode(data_dir string, host string, port, rpc_port, raft_port int, peers 
 	}
 	raft.SetLogLevel(0)
 	n.raft_node.RegisterCommand(&SetCommand{})
-	n.raft_node.SetSnapshot(&Snapshot{})
+	n.raft_node.SetSnapshot(NewSnapshot(n.db))
 	n.raft_node.SetSyncTypes([]*raft.SyncType{
 		{86400, 1},
 		{14400, 1000},
@@ -108,6 +108,7 @@ func (n *Node) ListenAndServe() error {
 	service.node = n
 	server := rpc.NewServer()
 	server.RegisterName("S", service)
+	server.SetPoll(true)
 	rpc.SetLogLevel(rpc.OffLevel)
 	if n.rpc_transport == nil {
 		n.InitRPCProxy(MaxConnsPerHost, MaxIdleConnsPerHost)

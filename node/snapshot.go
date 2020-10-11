@@ -7,16 +7,17 @@ import (
 	"io/ioutil"
 )
 
-type Snapshot struct{}
-
-func NewSnapshot() raft.Snapshot {
-	return &Snapshot{}
+type Snapshot struct {
+	db *DB
 }
 
-func (s *Snapshot) Save(context interface{}, w io.Writer) (int, error) {
-	db := context.(*DB)
+func NewSnapshot(db *DB) raft.Snapshot {
+	return &Snapshot{db: db}
+}
+
+func (s *Snapshot) Save(w io.Writer) (int, error) {
 	var data map[string]string
-	data = db.Data()
+	data = s.db.Data()
 	raw, err := json.Marshal(data)
 	if err != nil {
 		return 0, err
@@ -24,8 +25,7 @@ func (s *Snapshot) Save(context interface{}, w io.Writer) (int, error) {
 	return w.Write(raw)
 }
 
-func (s *Snapshot) Recover(context interface{}, r io.Reader) (int, error) {
-	db := context.(*DB)
+func (s *Snapshot) Recover(r io.Reader) (int, error) {
 	var data map[string]string
 	raw, err := ioutil.ReadAll(r)
 	if err != nil {
@@ -35,6 +35,6 @@ func (s *Snapshot) Recover(context interface{}, r io.Reader) (int, error) {
 	if err != nil {
 		return len(raw), err
 	}
-	db.SetData(data)
+	s.db.SetData(data)
 	return len(raw), nil
 }
