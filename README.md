@@ -1,6 +1,7 @@
 # raftdb
 
-The raftdb is an example usage of [raft](https://github.com/hslam/raft  "raft") library.
+The raftdb implements a simple distributed key-value datastore, using the [raft](https://github.com/hslam/raft  "raft") distributed consensus protocol.
+
 
 ## Get started
 
