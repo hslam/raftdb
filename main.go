@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	_ "net/http/pprof"
-	"runtime"
 	"strconv"
 	"strings"
 )
@@ -34,8 +33,7 @@ func init() {
 	flag.IntVar(&debugPort, "d", 6061, "debug_port: -dp=6060")
 	flag.StringVar(&join, "join", "", "host:port")
 	flag.StringVar(&dataDir, "path", "raft.1", "path")
-	flag.IntVar(&max, "m", 8, "MaxConnsPerHost: -m=8")
-	runtime.GOMAXPROCS(runtime.NumCPU())
+	flag.IntVar(&max, "m", 1, "MaxConnsPerHost: -m=2")
 }
 
 func main() {

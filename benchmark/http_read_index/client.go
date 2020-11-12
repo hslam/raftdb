@@ -6,11 +6,8 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
-	"strconv"
 )
 
-var port int
-var host string
 var addr string
 var clients int
 var total_calls int
@@ -18,14 +15,12 @@ var parallel int
 var bar bool
 
 func init() {
-	flag.StringVar(&host, "h", "127.0.0.1", "host: -h=127.0.0.1")
-	flag.IntVar(&port, "p", 7001, "port: -p=7001")
+	flag.StringVar(&addr, "addr", ":7001", "-addr=:7001")
 	flag.IntVar(&clients, "clients", 200, "num: -clients=1")
 	flag.IntVar(&total_calls, "total", 100000, "total_calls: -total=10000")
 	flag.IntVar(&parallel, "parallel", 1, "total_calls: -total=10000")
 	flag.BoolVar(&bar, "bar", false, "bar: -bar=true")
 	flag.Parse()
-	addr = host + ":" + strconv.Itoa(port)
 	stats.SetBar(bar)
 }
 func main() {
