@@ -40,7 +40,7 @@ func (s *Service) Set(req *Request, res *Response) error {
 
 func (s *Service) Get(req *Request, res *Response) error {
 	if s.node.raft_node.IsLeader() {
-		if ok := s.node.raft_node.Lease(); ok {
+		if ok := s.node.raft_node.LeaseRead(); ok {
 			value := s.node.db.Get(req.Key)
 			res.Result = []byte(value)
 			res.Ok = true
