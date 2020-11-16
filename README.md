@@ -10,7 +10,7 @@ go get github.com/hslam/raftdb
 
 ### Build
 ```
-go build -tags=use_cgo main.go
+go build main.go
 ```
 
 ### Singleton
