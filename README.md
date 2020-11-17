@@ -10,7 +10,7 @@ go get github.com/hslam/raftdb
 
 ### Build
 ```
-go build main.go
+go build -o raftdb main.go
 ```
 
 ### Singleton
