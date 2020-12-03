@@ -33,13 +33,15 @@ curl http://localhost:7001/db/foo
 ```
 
 ## Benchmark
-```
-pkg     cluster     operation   transport   requests/s  p99
-RAFT    ThreeNodes  ReadIndex   RPC         143726      7.21ms
-RAFT    ThreeNodes  Write       RPC         33874       62.46ms
-ETCD    ThreeNodes  ReadIndex   GRPC        31808       50.97ms
-ETCD    ThreeNodes  Write       GRPC        9635        307.00ms
-```
+Running on three nodes cluster.
+##### Write
+
+<img src="https://raw.githubusercontent.com/hslam/raft-benchmark/master/raft-write-qps.png" width = "400" height = "300" alt="write-qps" align=center><img src="https://raw.githubusercontent.com/hslam/raft-benchmark/master/raft-write-p99.png" width = "400" height = "300" alt="write-p99" align=center>
+
+##### Read Index
+
+<img src="https://raw.githubusercontent.com/hslam/raft-benchmark/master/raft-read-qps.png" width = "400" height = "300" alt="read-qps" align=center><img src="https://raw.githubusercontent.com/hslam/raft-benchmark/master/raft-read-p99.png" width = "400" height = "300" alt="read-p99" align=center>
+
 
 ## License
 This package is licenced under a MIT license (Copyright (c) 2019 Meng Huang)

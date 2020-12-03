@@ -39,6 +39,9 @@ func main() {
 		if conn, err := rpc.Dial(network, addr, codec); err != nil {
 			log.Fatalln("dailing error: ", err)
 		} else {
+			req := &node.Request{Key: "foo", Value: "bar"}
+			var res node.Response
+			conn.Call("S.Set", req, &res)
 			wrkClients = append(wrkClients, &WrkClient{conn})
 		}
 	}
