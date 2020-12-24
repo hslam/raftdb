@@ -12,7 +12,7 @@ import (
 
 var (
 	host      string
-	port      int
+	httpPort  int
 	rpcPort   int
 	raftPort  int
 	debug     bool
@@ -25,7 +25,7 @@ var (
 
 func init() {
 	flag.StringVar(&host, "h", "localhost", "hostname")
-	flag.IntVar(&port, "p", 7001, "port")
+	flag.IntVar(&httpPort, "p", 7001, "port")
 	flag.IntVar(&rpcPort, "c", 8001, "port")
 	flag.IntVar(&raftPort, "f", 9001, "port")
 	flag.StringVar(&addrs, "peers", "", "host:port,host:port")
@@ -43,7 +43,7 @@ func main() {
 	if addrs != "" {
 		peers = strings.Split(addrs, ",")
 	}
-	s := node.NewNode(dataDir, host, port, rpcPort, raftPort, peers, join)
+	s := node.NewNode(dataDir, host, httpPort, rpcPort, raftPort, peers, join)
 	s.InitRPCProxy(max, 0)
 	log.Fatal(s.ListenAndServe())
 }

@@ -37,25 +37,26 @@ func init() {
 const LeaderPrefix = "LEADER:"
 
 type Node struct {
-	mu            sync.RWMutex
-	host          string
-	port          int
-	rpc_port      int
-	data_dir      string
-	mux           *mux.Mux
-	render        *render.Render
-	raft_node     raft.Node
-	http_server   *http.Server
-	rpc_transport *rpc.Transport
-	db            *DB
+	mu           sync.RWMutex
+	host         string
+	httpPort     int
+	rpcPort      int
+	dataDir      string
+	mux          *mux.Mux
+	render       *render.Render
+	raftNode     raft.Node
+	httpServer   *http.Server
+	rpcServer    *rpc.Server
+	rpcTransport *rpc.Transport
+	db           *DB
 }
 
-func NewNode(data_dir string, host string, port, rpc_port, raft_port int, peers []string, join string) *Node {
+func NewNode(dataDir string, host string, httpPort, rpcPort, raftPort int, peers []string, join string) *Node {
 	n := &Node{
 		host:     host,
-		port:     port,
-		rpc_port: rpc_port,
-		data_dir: data_dir,
+		httpPort: httpPort,
+		rpcPort:  rpcPort,
+		dataDir:  dataDir,
 		db:       newDB(),
 		mux:      mux.New(),
 		render:   render.NewRender(),
@@ -65,14 +66,14 @@ func NewNode(data_dir string, host string, port, rpc_port, raft_port int, peers 
 	for i, v := range peers {
 		nodes[i] = &raft.NodeInfo{Address: v, Data: nil}
 	}
-	n.raft_node, err = raft.NewNode(host, raft_port, n.data_dir, n.db, false, nodes)
+	n.raftNode, err = raft.NewNode(host, raftPort, n.dataDir, n.db, false, nodes)
 	if err != nil {
 		log.Fatal(err)
 	}
 	raft.SetLogLevel(0)
-	n.raft_node.RegisterCommand(&SetCommand{})
-	n.raft_node.SetSnapshot(NewSnapshot(n.db))
-	n.raft_node.SetSyncTypes([]*raft.SyncType{
+	n.raftNode.RegisterCommand(&SetCommand{})
+	n.raftNode.SetSnapshot(NewSnapshot(n.db))
+	n.raftNode.SetSyncTypes([]*raft.SyncType{
 		{86400, 1},
 		{14400, 1000},
 		{3600, 10000},
@@ -80,10 +81,10 @@ func NewNode(data_dir string, host string, port, rpc_port, raft_port int, peers 
 		{900, 200000},
 		{60, 5000000},
 	})
-	n.raft_node.SetCodec(&raft.GOGOPBCodec{})
-	n.raft_node.SetGzipSnapshot(true)
-	n.http_server = &http.Server{
-		Addr:    fmt.Sprintf(":%d", n.port),
+	n.raftNode.SetCodec(&raft.GOGOPBCodec{})
+	n.raftNode.SetGzipSnapshot(true)
+	n.httpServer = &http.Server{
+		Addr:    fmt.Sprintf(":%d", n.httpPort),
 		Handler: n.mux,
 	}
 	n.mux.Group("/cluster", func(m *mux.Mux) {
@@ -101,30 +102,32 @@ func NewNode(data_dir string, host string, port, rpc_port, raft_port int, peers 
 }
 
 func (n *Node) ListenAndServe() error {
-	n.raft_node.Start()
+	n.raftNode.Start()
 	log.Println("HTTP listening at:", n.uri())
-	log.Println("RPC listening at:", fmt.Sprintf("%s:%d", n.host, n.rpc_port))
+	log.Println("RPC listening at:", fmt.Sprintf("%s:%d", n.host, n.rpcPort))
 	service := new(Service)
 	service.node = n
-	server := rpc.NewServer()
-	server.RegisterName("S", service)
-	server.SetPoll(true)
+	n.rpcServer = rpc.NewServer()
+	n.rpcServer.RegisterName("S", service)
+	n.rpcServer.SetPoll(true)
 	rpc.SetLogLevel(rpc.OffLogLevel)
-	if n.rpc_transport == nil {
+	if n.rpcTransport == nil {
 		n.InitRPCProxy(MaxConnsPerHost, MaxIdleConnsPerHost)
 	}
-	go func() { fmt.Println(server.Listen("tcp", fmt.Sprintf(":%d", n.rpc_port), codec)) }()
-	return n.http_server.ListenAndServe()
+	go func() {
+		fmt.Println("raftdb.node.rpc :", n.rpcServer.Listen("tcp", fmt.Sprintf(":%d", n.rpcPort), codec))
+	}()
+	return n.httpServer.ListenAndServe()
 }
 func (n *Node) InitRPCProxy(MaxConnsPerHost int, MaxIdleConnsPerHost int) {
-	n.rpc_transport = &rpc.Transport{
+	n.rpcTransport = &rpc.Transport{
 		MaxConnsPerHost:     MaxConnsPerHost,
 		MaxIdleConnsPerHost: MaxIdleConnsPerHost,
 		Options:             &rpc.Options{Network: network, Codec: codec},
 	}
 }
 func (n *Node) uri() string {
-	return fmt.Sprintf("http://%s:%d", n.host, n.port)
+	return fmt.Sprintf("http://%s:%d", n.host, n.httpPort)
 }
 
 func (n *Node) leaderHandle(hander http.HandlerFunc) http.HandlerFunc {
@@ -133,10 +136,10 @@ func (n *Node) leaderHandle(hander http.HandlerFunc) http.HandlerFunc {
 		}
 	}()
 	return func(w http.ResponseWriter, r *http.Request) {
-		if n.raft_node.IsLeader() {
+		if n.raftNode.IsLeader() {
 			hander(w, r)
 		} else {
-			leader := n.raft_node.Leader()
+			leader := n.raftNode.Leader()
 			if leader != "" {
 				leader_url, err := url.Parse("http://" + leader)
 				if err != nil {
@@ -166,11 +169,11 @@ func (n *Node) setHandler(w http.ResponseWriter, req *http.Request) {
 	}
 	value := string(b)
 	setCommand := newSetCommand(params["key"], value)
-	_, err = n.raft_node.Do(setCommand)
+	_, err = n.raftNode.Do(setCommand)
 	setCommandPool.Put(setCommand)
 	if err != nil {
 		if err == raft.ErrNotLeader {
-			leader := n.raft_node.Leader()
+			leader := n.raftNode.Leader()
 			if leader != "" {
 				http.Error(w, LeaderPrefix+leader, http.StatusBadRequest)
 				return
@@ -185,7 +188,7 @@ func (n *Node) getHandler(w http.ResponseWriter, req *http.Request) {
 		}
 	}()
 	params := n.mux.Params(req)
-	if ok := n.raft_node.ReadIndex(); ok {
+	if ok := n.raftNode.ReadIndex(); ok {
 		value := n.db.Get(params["key"])
 		w.Write([]byte(value))
 	}
@@ -196,10 +199,10 @@ func (n *Node) statusHandler(w http.ResponseWriter, req *http.Request) {
 		}
 	}()
 	status := &Status{
-		IsLeader: n.raft_node.IsLeader(),
-		Leader:   n.raft_node.Leader(),
-		Node:     n.raft_node.Address(),
-		Peers:    n.raft_node.Peers(),
+		IsLeader: n.raftNode.IsLeader(),
+		Leader:   n.raftNode.Leader(),
+		Node:     n.raftNode.Address(),
+		Peers:    n.raftNode.Peers(),
 	}
 	n.render.JSON(w, req, status, http.StatusOK)
 }
@@ -208,42 +211,42 @@ func (n *Node) leaderHandler(w http.ResponseWriter, req *http.Request) {
 		if err := recover(); err != nil {
 		}
 	}()
-	w.Write([]byte(n.raft_node.Leader()))
+	w.Write([]byte(n.raftNode.Leader()))
 }
 func (n *Node) readyHandler(w http.ResponseWriter, req *http.Request) {
 	defer func() {
 		if err := recover(); err != nil {
 		}
 	}()
-	n.render.JSON(w, req, n.raft_node.Ready(), http.StatusOK)
+	n.render.JSON(w, req, n.raftNode.Ready(), http.StatusOK)
 }
 func (n *Node) isLeaderHandler(w http.ResponseWriter, req *http.Request) {
 	defer func() {
 		if err := recover(); err != nil {
 		}
 	}()
-	n.render.JSON(w, req, n.raft_node.IsLeader(), http.StatusOK)
+	n.render.JSON(w, req, n.raftNode.IsLeader(), http.StatusOK)
 }
 func (n *Node) addressHandler(w http.ResponseWriter, req *http.Request) {
 	defer func() {
 		if err := recover(); err != nil {
 		}
 	}()
-	w.Write([]byte(n.raft_node.Address()))
+	w.Write([]byte(n.raftNode.Address()))
 }
 func (n *Node) peersHandler(w http.ResponseWriter, req *http.Request) {
 	defer func() {
 		if err := recover(); err != nil {
 		}
 	}()
-	n.render.JSON(w, req, n.raft_node.Peers(), http.StatusOK)
+	n.render.JSON(w, req, n.raftNode.Peers(), http.StatusOK)
 }
 func (n *Node) nodesHandler(w http.ResponseWriter, req *http.Request) {
 	defer func() {
 		if err := recover(); err != nil {
 		}
 	}()
-	nodes := n.raft_node.Peers()
-	nodes = append(nodes, n.raft_node.Address())
+	nodes := n.raftNode.Peers()
+	nodes = append(nodes, n.raftNode.Address())
 	n.render.JSON(w, req, nodes, http.StatusOK)
 }
