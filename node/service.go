@@ -2,8 +2,6 @@ package node
 
 import (
 	"github.com/hslam/raft"
-	"net/url"
-	"strconv"
 )
 
 type Service struct {
@@ -21,18 +19,9 @@ func (s *Service) Set(req *Request, res *Response) error {
 		}
 		return err
 	} else {
-		leader := s.node.raftNode.Leader()
-		if leader != "" {
-			leader_url, err := url.Parse("http://" + leader)
-			if err != nil {
-				panic(err)
-			}
-			port, err := strconv.Atoi(leader_url.Port())
-			if err != nil {
-				panic(err)
-			}
-			leader_host := leader_url.Hostname() + ":" + strconv.Itoa(port-1000)
-			return s.node.rpcTransport.Call(leader_host, "S.Set", req, res)
+		leaderRPCAddress := s.node.leaderRPCAddress()
+		if leaderRPCAddress != "" {
+			return s.node.rpcTransport.Call(leaderRPCAddress, "S.Set", req, res)
 		}
 		return raft.ErrNotLeader
 	}
@@ -48,18 +37,9 @@ func (s *Service) Get(req *Request, res *Response) error {
 		}
 		return nil
 	} else {
-		leader := s.node.raftNode.Leader()
-		if leader != "" {
-			leader_url, err := url.Parse("http://" + leader)
-			if err != nil {
-				panic(err)
-			}
-			port, err := strconv.Atoi(leader_url.Port())
-			if err != nil {
-				panic(err)
-			}
-			leader_host := leader_url.Hostname() + ":" + strconv.Itoa(port-1000)
-			return s.node.rpcTransport.Call(leader_host, "S.Get", req, res)
+		leaderRPCAddress := s.node.leaderRPCAddress()
+		if leaderRPCAddress != "" {
+			return s.node.rpcTransport.Call(leaderRPCAddress, "S.Get", req, res)
 		}
 		return raft.ErrNotLeader
 	}
@@ -75,18 +55,9 @@ func (s *Service) ReadIndexGet(req *Request, res *Response) error {
 		}
 		return nil
 	} else {
-		leader := s.node.raftNode.Leader()
-		if leader != "" {
-			leader_url, err := url.Parse("http://" + leader)
-			if err != nil {
-				panic(err)
-			}
-			port, err := strconv.Atoi(leader_url.Port())
-			if err != nil {
-				panic(err)
-			}
-			leader_host := leader_url.Hostname() + ":" + strconv.Itoa(port-1000)
-			return s.node.rpcTransport.Call(leader_host, "S.ReadIndexGet", req, res)
+		leaderRPCAddress := s.node.leaderRPCAddress()
+		if leaderRPCAddress != "" {
+			return s.node.rpcTransport.Call(leaderRPCAddress, "S.ReadIndexGet", req, res)
 		}
 		return raft.ErrNotLeader
 	}
