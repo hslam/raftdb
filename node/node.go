@@ -1,13 +1,16 @@
+// Copyright (c) 2019 Meng Huang (mhboy@outlook.com)
+// This package is licensed under a MIT license that can be found in the LICENSE file.
+
 package node
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/hslam/handler/proxy"
 	"github.com/hslam/handler/render"
 	"github.com/hslam/mux"
 	"github.com/hslam/raft"
 	"github.com/hslam/rpc"
-	"gopkg.in/square/go-jose.v1/json"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -33,6 +36,7 @@ func init() {
 	}
 }
 
+const WatchLeader = "leader"
 const LeaderPrefix = "LEADER:"
 
 type Node struct {
@@ -71,7 +75,12 @@ func NewNode(dataDir string, host string, httpPort, rpcPort, raftPort int, peers
 	for i, v := range peers {
 		nodes[i] = &raft.NodeInfo{Address: v, Data: nil}
 	}
-	n.raftNode, err = raft.NewNode(host, raftPort, n.dataDir, n.db, false, nodes)
+	var j bool
+	if len(join) > 0 {
+		j = true
+		nodes = append(nodes, &raft.NodeInfo{Address: join, Data: nil})
+	}
+	n.raftNode, err = raft.NewNode(host, raftPort, n.dataDir, n.db, j, nodes)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -81,10 +90,10 @@ func NewNode(dataDir string, host string, httpPort, rpcPort, raftPort int, peers
 	n.raftNode.SetSyncTypes([]*raft.SyncType{
 		{86400, 1},
 		{14400, 1000},
-		{3600, 10000},
-		{1800, 50000},
-		{900, 200000},
-		{60, 5000000},
+		{3600, 50000},
+		{1800, 200000},
+		{900, 1000000},
+		{60, 20000000},
 	})
 	n.raftNode.SetCodec(&raft.GOGOPBCodec{})
 	n.raftNode.SetGzipSnapshot(true)
@@ -234,6 +243,13 @@ func (n *Node) getHandler(w http.ResponseWriter, req *http.Request) {
 		value := n.db.Get(params["key"])
 		w.Write([]byte(value))
 	}
+}
+
+type Status struct {
+	IsLeader bool     `json:"IsLeader,omitempty"`
+	Leader   string   `json:"Leader,omitempty"`
+	Node     string   `json:"Node,omitempty"`
+	Peers    []string `json:"Peers,omitempty"`
 }
 
 func (n *Node) statusHandler(w http.ResponseWriter, req *http.Request) {

@@ -13,13 +13,7 @@ message Request {
 }
 
 message Response {
-    bool    ok     = 1;
-    bytes   result = 2;
-}
-
-message Status {
-    bool IsLeader = 1;
-    string Leader = 2;
-    string Node = 3;
-    repeated string Peers = 4;
+    bool    Ok     = 1;
+    string  Result = 2;
+    string  Leader = 3;
 }
