@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"github.com/hslam/handler/proxy"
 	"github.com/hslam/handler/render"
-	"github.com/hslam/mux"
 	"github.com/hslam/raft"
 	"github.com/hslam/rpc"
+	"github.com/hslam/rum"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -45,10 +45,9 @@ type Node struct {
 	httpPort     int
 	rpcPort      int
 	dataDir      string
-	mux          *mux.Mux
 	render       *render.Render
 	raftNode     raft.Node
-	httpServer   *http.Server
+	rum          *rum.Rum
 	rpcServer    *rpc.Server
 	rpcTransport *rpc.Transport
 	db           *DB
@@ -67,13 +66,16 @@ func NewNode(dataDir string, host string, httpPort, rpcPort, raftPort int, peers
 		rpcPort:  rpcPort,
 		dataDir:  dataDir,
 		db:       newDB(),
-		mux:      mux.New(),
+		rum:      rum.New(),
 		render:   render.NewRender(),
 	}
+	n.InitRPCProxy(1, 0)
 	var err error
-	nodes := make([]*raft.NodeInfo, len(peers))
-	for i, v := range peers {
-		nodes[i] = &raft.NodeInfo{Address: v, Data: nil}
+	nodes := make([]*raft.NodeInfo, 0, len(peers))
+	for _, v := range peers {
+		if len(v) > 0 {
+			nodes = append(nodes, &raft.NodeInfo{Address: v, Data: nil})
+		}
 	}
 	var j bool
 	if len(join) > 0 {
@@ -110,11 +112,7 @@ func NewNode(dataDir string, host string, httpPort, rpcPort, raftPort int, peers
 	n.raftNode.MemberChange(func() {
 		n.resetLeader()
 	})
-	n.httpServer = &http.Server{
-		Addr:    fmt.Sprintf(":%d", n.httpPort),
-		Handler: n.mux,
-	}
-	n.mux.Group("/cluster", func(m *mux.Mux) {
+	n.rum.Group("/cluster", func(m *rum.Mux) {
 		m.HandleFunc("/status", n.statusHandler).All()
 		m.HandleFunc("/leader", n.leaderHandler).All()
 		m.HandleFunc("/ready", n.readyHandler).All()
@@ -123,8 +121,8 @@ func NewNode(dataDir string, host string, httpPort, rpcPort, raftPort int, peers
 		m.HandleFunc("/peers", n.peersHandler).All()
 		m.HandleFunc("/nodes", n.nodesHandler).All()
 	})
-	n.mux.HandleFunc("/db/:key", n.leaderHandle(n.getHandler)).GET()
-	n.mux.HandleFunc("/db/:key", n.leaderHandle(n.setHandler)).POST()
+	n.rum.HandleFunc("/db/:key", n.leaderHandle(n.getHandler)).GET()
+	n.rum.HandleFunc("/db/:key", n.leaderHandle(n.setHandler)).POST()
 	return n
 }
 
@@ -144,7 +142,8 @@ func (n *Node) ListenAndServe() error {
 	go func() {
 		fmt.Println("raftdb.node.rpc :", n.rpcServer.Listen("tcp", fmt.Sprintf(":%d", n.rpcPort), codec))
 	}()
-	return n.httpServer.ListenAndServe()
+	n.rum.SetFast(true)
+	return n.rum.Run(fmt.Sprintf(":%d", n.httpPort))
 }
 
 func (n *Node) InitRPCProxy(MaxConnsPerHost int, MaxIdleConnsPerHost int) {
@@ -211,7 +210,7 @@ func (n *Node) setHandler(w http.ResponseWriter, req *http.Request) {
 		if err := recover(); err != nil {
 		}
 	}()
-	params := n.mux.Params(req)
+	params := n.rum.Params(req)
 	b, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -238,7 +237,7 @@ func (n *Node) getHandler(w http.ResponseWriter, req *http.Request) {
 		if err := recover(); err != nil {
 		}
 	}()
-	params := n.mux.Params(req)
+	params := n.rum.Params(req)
 	if ok := n.raftNode.ReadIndex(); ok {
 		value := n.db.Get(params["key"])
 		w.Write([]byte(value))
