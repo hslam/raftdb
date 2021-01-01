@@ -36,7 +36,6 @@ func init() {
 	}
 }
 
-const WatchLeader = "leader"
 const LeaderPrefix = "LEADER:"
 
 type Node struct {
@@ -59,7 +58,7 @@ type address struct {
 	RPC  string `json:"r,omitempty"`
 }
 
-func NewNode(dataDir string, host string, httpPort, rpcPort, raftPort int, peers []string, join string) *Node {
+func NewNode(dataDir string, host string, httpPort, rpcPort, raftPort int, peers []string, join bool) *Node {
 	n := &Node{
 		host:     host,
 		httpPort: httpPort,
@@ -77,12 +76,7 @@ func NewNode(dataDir string, host string, httpPort, rpcPort, raftPort int, peers
 			nodes = append(nodes, &raft.NodeInfo{Address: v, Data: nil})
 		}
 	}
-	var j bool
-	if len(join) > 0 {
-		j = true
-		nodes = append(nodes, &raft.NodeInfo{Address: join, Data: nil})
-	}
-	n.raftNode, err = raft.NewNode(host, raftPort, n.dataDir, n.db, j, nodes)
+	n.raftNode, err = raft.NewNode(host, raftPort, n.dataDir, n.db, join, nodes)
 	if err != nil {
 		log.Fatal(err)
 	}
