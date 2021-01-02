@@ -27,10 +27,7 @@ func (d *SetCommand) Marshal() ([]byte, error) {
 	size := d.Size()
 	buf := make([]byte, size)
 	n, err := d.MarshalTo(buf[:size])
-	if err != nil {
-		return nil, err
-	}
-	return buf[:n], nil
+	return buf[:n], err
 }
 
 // MarshalTo marshals into buf and returns the number of bytes.
@@ -78,7 +75,7 @@ func (d *SetCommand) Unmarshal(data []byte) error {
 		switch fieldNumber {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
 			}
 			n = code.DecodeString(data[offset:], &d.Key)
 			offset += n
@@ -112,10 +109,7 @@ func (d *Request) Marshal() ([]byte, error) {
 	size := d.Size()
 	buf := make([]byte, size)
 	n, err := d.MarshalTo(buf[:size])
-	if err != nil {
-		return nil, err
-	}
-	return buf[:n], nil
+	return buf[:n], err
 }
 
 // MarshalTo marshals into buf and returns the number of bytes.
@@ -163,7 +157,7 @@ func (d *Request) Unmarshal(data []byte) error {
 		switch fieldNumber {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
 			}
 			n = code.DecodeString(data[offset:], &d.Key)
 			offset += n
@@ -190,6 +184,7 @@ func (d *Response) Size() int {
 	var size uint64
 	size += 11
 	size += 11 + uint64(len(d.Result))
+	size += 11 + uint64(len(d.Leader))
 	return int(size)
 }
 
