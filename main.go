@@ -7,15 +7,9 @@ import (
 	"strings"
 )
 
-var (
-	host     string
-	httpPort int
-	rpcPort  int
-	raftPort int
-	peers    string
-	join     bool
-	path     string
-)
+var host, peers, path string
+var httpPort, rpcPort, raftPort int
+var join bool
 
 func init() {
 	flag.StringVar(&host, "h", "localhost", "")
