@@ -14,7 +14,7 @@ func newSetCommand(key string, value string) raft.Command {
 	return c
 }
 
-func (c *SetCommand) Type() int32 {
+func (c *SetCommand) Type() int64 {
 	return 1
 }
 
