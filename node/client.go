@@ -11,16 +11,15 @@ import (
 type Client struct {
 	lock   sync.Mutex
 	leader string
-	proxy  *rpc.ReverseProxy
+	client *rpc.Client
 }
 
 func NewClient(targets ...string) *Client {
 	client := &Client{}
 	opts := &rpc.Options{Network: network, Codec: codec}
-	client.proxy = rpc.NewReverseProxy(targets...)
-	client.proxy.Transport = &rpc.Transport{Options: opts}
-	client.proxy.Scheduling = rpc.LeastTimeScheduling
-	client.proxy.Director = client.director
+	client.client = rpc.NewClient(opts, targets...)
+	client.client.Scheduling = rpc.LeastTimeScheduling
+	client.client.Director = client.director
 	return client
 }
 
@@ -40,7 +39,7 @@ func (c *Client) setDirector(target string) {
 func (c *Client) Set(key, value string) bool {
 	req := &Request{Key: key, Value: value}
 	var res Response
-	c.proxy.Call("S.Set", req, &res)
+	c.client.Call("S.Set", req, &res)
 	if len(res.Leader) > 0 {
 		c.setDirector(res.Leader)
 	}
@@ -50,7 +49,7 @@ func (c *Client) Set(key, value string) bool {
 func (c *Client) ReadIndexGet(key string) (value string, ok bool) {
 	req := &Request{Key: key}
 	var res Response
-	c.proxy.Call("S.RGet", req, &res)
+	c.client.Call("S.RGet", req, &res)
 	if len(res.Leader) > 0 {
 		c.setDirector(res.Leader)
 	}
@@ -60,7 +59,7 @@ func (c *Client) ReadIndexGet(key string) (value string, ok bool) {
 func (c *Client) LeaseReadGet(key string) (value string, ok bool) {
 	req := &Request{Key: key}
 	var res Response
-	c.proxy.Call("S.LGet", req, &res)
+	c.client.Call("S.LGet", req, &res)
 	if len(res.Leader) > 0 {
 		c.setDirector(res.Leader)
 	}
