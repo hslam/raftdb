@@ -88,8 +88,8 @@ func NewNode(dataDir string, host string, httpPort, rpcPort, raftPort int, peers
 		{14400, 1000},
 		{3600, 50000},
 		{1800, 200000},
-		{900, 1000000},
-		{60, 20000000},
+		{900, 2000000},
+		{60, 5000000},
 	})
 	n.raftNode.SetCodec(&raft.GOGOPBCodec{})
 	n.raftNode.SetGzipSnapshot(true)
@@ -101,7 +101,7 @@ func NewNode(dataDir string, host string, httpPort, rpcPort, raftPort int, peers
 		log.Fatal(err)
 	}
 	n.raftNode.LeaderChange(func() {
-		n.raftNode.Join(&raft.NodeInfo{Address: fmt.Sprintf("%s:%d", host, raftPort), Data: meta})
+		n.raftNode.Join(&raft.NodeInfo{Address: n.raftNode.Address(), Data: meta})
 	})
 	n.raftNode.MemberChange(func() {
 		n.resetLeader()
@@ -129,7 +129,7 @@ func (n *Node) ListenAndServe() error {
 	n.rpcServer = rpc.NewServer()
 	n.rpcServer.RegisterName("S", service)
 	n.rpcServer.SetPoll(true)
-	rpc.SetLogLevel(rpc.OffLogLevel)
+	n.rpcServer.SetLogLevel(rpc.OffLogLevel)
 	if n.rpcTransport == nil {
 		n.InitRPCProxy(MaxConnsPerHost, MaxIdleConnsPerHost)
 	}
