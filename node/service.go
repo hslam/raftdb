@@ -4,7 +4,7 @@
 package node
 
 import (
-	"github.com/hslam/raft"
+	"github.com/hslam/rpc"
 )
 
 type Service struct {
@@ -20,16 +20,15 @@ func (s *Service) Set(req *Request, res *Response) error {
 			res.Ok = true
 			return nil
 		}
-		return err
-	} else {
+	} else if len(s.node.raftNode.Leader()) > 0 {
 		leaderRPCAddress := s.node.leaderRPCAddress()
 		if leaderRPCAddress != "" {
 			err := s.node.rpcTransport.Call(leaderRPCAddress, "S.Set", req, res)
 			res.Leader = leaderRPCAddress
 			return err
 		}
-		return raft.ErrNotLeader
 	}
+	return rpc.ErrShutdown
 }
 
 func (s *Service) LGet(req *Request, res *Response) error {
@@ -40,16 +39,15 @@ func (s *Service) LGet(req *Request, res *Response) error {
 			res.Ok = true
 			return nil
 		}
-		return nil
-	} else {
+	} else if len(s.node.raftNode.Leader()) > 0 {
 		leaderRPCAddress := s.node.leaderRPCAddress()
 		if leaderRPCAddress != "" {
 			err := s.node.rpcTransport.Call(leaderRPCAddress, "S.LGet", req, res)
 			res.Leader = leaderRPCAddress
 			return err
 		}
-		return raft.ErrNotLeader
 	}
+	return rpc.ErrShutdown
 }
 
 func (s *Service) RGet(req *Request, res *Response) error {
@@ -60,14 +58,13 @@ func (s *Service) RGet(req *Request, res *Response) error {
 			res.Ok = true
 			return nil
 		}
-		return nil
-	} else {
+	} else if len(s.node.raftNode.Leader()) > 0 {
 		leaderRPCAddress := s.node.leaderRPCAddress()
 		if leaderRPCAddress != "" {
 			err := s.node.rpcTransport.Call(leaderRPCAddress, "S.RGet", req, res)
 			res.Leader = leaderRPCAddress
 			return err
 		}
-		return raft.ErrNotLeader
 	}
+	return rpc.ErrShutdown
 }
