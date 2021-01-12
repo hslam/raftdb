@@ -80,7 +80,7 @@ func NewNode(dataDir string, host string, httpPort, rpcPort, raftPort int, peers
 	if err != nil {
 		log.Fatal(err)
 	}
-	raft.SetLogLevel(0)
+	n.raftNode.SetLogLevel(0)
 	n.raftNode.RegisterCommand(&SetCommand{})
 	n.raftNode.SetSnapshot(NewSnapshot(n.db))
 	n.raftNode.SetSyncTypes([]*raft.SyncType{
