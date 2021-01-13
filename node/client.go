@@ -38,6 +38,7 @@ func (c *Client) setDirector(target string) {
 		c.ready.Store(true)
 	} else {
 		c.ready.Store(false)
+		c.client.Fallback(time.Second * 3)
 	}
 }
 
