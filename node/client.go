@@ -10,15 +10,17 @@ import (
 )
 
 type Client struct {
-	leader *atomic.String
-	ready  *atomic.Bool
-	client *rpc.Client
+	leader   *atomic.String
+	ready    *atomic.Bool
+	client   *rpc.Client
+	Fallback time.Duration
 }
 
 func NewClient(targets ...string) *Client {
 	client := &Client{
-		leader: atomic.NewString(""),
-		ready:  atomic.NewBool(true),
+		leader:   atomic.NewString(""),
+		ready:    atomic.NewBool(true),
+		Fallback: time.Second * 3,
 	}
 	opts := &rpc.Options{Network: network, Codec: codec}
 	client.client = rpc.NewClient(opts, targets...)
@@ -38,7 +40,9 @@ func (c *Client) setDirector(target string) {
 		c.ready.Store(true)
 	} else {
 		c.ready.Store(false)
-		c.client.Fallback(time.Second * 3)
+		if c.Fallback > 0 {
+			c.client.Fallback(c.Fallback)
+		}
 	}
 }
 
