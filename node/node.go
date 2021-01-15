@@ -70,13 +70,13 @@ func NewNode(dataDir string, host string, httpPort, rpcPort, raftPort int, peers
 	}
 	n.InitRPCProxy(1, 0)
 	var err error
-	nodes := make([]*raft.NodeInfo, 0, len(peers))
+	members := make([]*raft.Member, 0, len(peers))
 	for _, v := range peers {
 		if len(v) > 0 {
-			nodes = append(nodes, &raft.NodeInfo{Address: v, Data: nil})
+			members = append(members, &raft.Member{Address: v})
 		}
 	}
-	n.raftNode, err = raft.NewNode(host, raftPort, n.dataDir, n.db, join, nodes)
+	n.raftNode, err = raft.NewNode(host, raftPort, n.dataDir, n.db, join, members)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -100,10 +100,8 @@ func NewNode(dataDir string, host string, httpPort, rpcPort, raftPort int, peers
 	if err != nil {
 		log.Fatal(err)
 	}
+	n.raftNode.SetNodeMeta(n.raftNode.Address(), meta)
 	n.raftNode.LeaderChange(func() {
-		n.raftNode.Join(&raft.NodeInfo{Address: n.raftNode.Address(), Data: meta})
-	})
-	n.raftNode.MemberChange(func() {
 		n.resetLeader()
 	})
 	n.rum.Group("/cluster", func(m *rum.Mux) {
@@ -155,10 +153,10 @@ func (n *Node) uri() string {
 func (n *Node) resetLeader() {
 	leader := n.raftNode.Leader()
 	if leader != "" {
-		info := n.raftNode.LookupPeer(leader)
-		if info != nil && len(info.Data) > 0 {
+		meta, ok := n.raftNode.GetNodeMeta(leader)
+		if ok && len(meta) > 0 {
 			var addr address
-			err := json.Unmarshal(info.Data, &addr)
+			err := json.Unmarshal(meta, &addr)
 			if err == nil {
 				n.mu.Lock()
 				n.leader = &addr
