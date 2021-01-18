@@ -126,7 +126,6 @@ func (n *Node) ListenAndServe() error {
 	service.node = n
 	n.rpcServer = rpc.NewServer()
 	n.rpcServer.RegisterName("S", service)
-	n.rpcServer.SetPoll(true)
 	n.rpcServer.SetLogLevel(rpc.OffLogLevel)
 	if n.rpcTransport == nil {
 		n.InitRPCProxy(MaxConnsPerHost, MaxIdleConnsPerHost)
