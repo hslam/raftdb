@@ -1,5 +1,5 @@
 # raftdb
-The raftdb implements a simple distributed key-value datastore, using the [raft](https://github.com/hslam/raft  "raft") distributed consensus protocol.
+The raftdb implements a simple distributed key-value database, using the [raft](https://github.com/hslam/raft  "raft") distributed consensus protocol.
 
 ## Get started
 
