@@ -65,7 +65,7 @@ func main() {
 Hello World
 ```
 
-### Benchmark
+### [Benchmark](https://github.com/hslam/raft-benchmark  "raft-benchmark")
 Running on a three nodes cluster.
 ##### Write
 
