@@ -58,7 +58,7 @@ type address struct {
 	RPC  string `json:"r,omitempty"`
 }
 
-func NewNode(dataDir string, host string, httpPort, rpcPort, raftPort int, peers []string, join bool) *Node {
+func NewNode(dataDir string, host string, httpPort, rpcPort, raftPort int, members []string, join bool) *Node {
 	n := &Node{
 		host:     host,
 		httpPort: httpPort,
@@ -70,13 +70,13 @@ func NewNode(dataDir string, host string, httpPort, rpcPort, raftPort int, peers
 	}
 	n.InitRPCProxy(1, 0)
 	var err error
-	members := make([]*raft.Member, 0, len(peers))
-	for _, v := range peers {
+	m := make([]*raft.Member, 0, len(members))
+	for _, v := range members {
 		if len(v) > 0 {
-			members = append(members, &raft.Member{Address: v})
+			m = append(m, &raft.Member{Address: v})
 		}
 	}
-	n.raftNode, err = raft.NewNode(host, raftPort, n.dataDir, n.db, join, members)
+	n.raftNode, err = raft.NewNode(host, raftPort, n.dataDir, n.db, join, m)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -111,7 +111,7 @@ func NewNode(dataDir string, host string, httpPort, rpcPort, raftPort int, peers
 		m.HandleFunc("/address", n.addressHandler).All()
 		m.HandleFunc("/isleader", n.isLeaderHandler).All()
 		m.HandleFunc("/peers", n.peersHandler).All()
-		m.HandleFunc("/nodes", n.nodesHandler).All()
+		m.HandleFunc("/members", n.membersHandler).All()
 	})
 	n.rum.HandleFunc("/db/:key", n.leaderHandle(n.getHandler)).GET()
 	n.rum.HandleFunc("/db/:key", n.leaderHandle(n.setHandler)).POST()
@@ -238,7 +238,7 @@ func (n *Node) getHandler(w http.ResponseWriter, req *http.Request) {
 type Status struct {
 	IsLeader bool     `json:"IsLeader,omitempty"`
 	Leader   string   `json:"Leader,omitempty"`
-	Node     string   `json:"Node,omitempty"`
+	Address  string   `json:"Address,omitempty"`
 	Peers    []string `json:"Peers,omitempty"`
 }
 
@@ -250,7 +250,7 @@ func (n *Node) statusHandler(w http.ResponseWriter, req *http.Request) {
 	status := &Status{
 		IsLeader: n.raftNode.IsLeader(),
 		Leader:   n.raftNode.Leader(),
-		Node:     n.raftNode.Address(),
+		Address:  n.raftNode.Address(),
 		Peers:    n.raftNode.Peers(),
 	}
 	n.render.JSON(w, req, status, http.StatusOK)
@@ -296,12 +296,12 @@ func (n *Node) peersHandler(w http.ResponseWriter, req *http.Request) {
 	n.render.JSON(w, req, n.raftNode.Peers(), http.StatusOK)
 }
 
-func (n *Node) nodesHandler(w http.ResponseWriter, req *http.Request) {
+func (n *Node) membersHandler(w http.ResponseWriter, req *http.Request) {
 	defer func() {
 		if err := recover(); err != nil {
 		}
 	}()
-	nodes := n.raftNode.Peers()
-	nodes = append(nodes, n.raftNode.Address())
-	n.render.JSON(w, req, nodes, http.StatusOK)
+	members := n.raftNode.Peers()
+	members = append(members, n.raftNode.Address())
+	n.render.JSON(w, req, members, http.StatusOK)
 }

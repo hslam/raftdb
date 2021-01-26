@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-var host, peers, path string
+var host, members, path string
 var httpPort, rpcPort, raftPort int
 var join bool
 
@@ -16,14 +16,14 @@ func init() {
 	flag.IntVar(&httpPort, "p", 7001, "")
 	flag.IntVar(&rpcPort, "c", 8001, "")
 	flag.IntVar(&raftPort, "f", 9001, "")
-	flag.StringVar(&peers, "peers", "", "")
+	flag.StringVar(&members, "members", "", "")
 	flag.StringVar(&path, "path", "raftdb.1", "")
 	flag.BoolVar(&join, "join", false, "")
 	flag.Parse()
 }
 
 func main() {
-	nodes := strings.Split(peers, ",")
-	n := node.NewNode(path, host, httpPort, rpcPort, raftPort, nodes, join)
+	m := strings.Split(members, ",")
+	n := node.NewNode(path, host, httpPort, rpcPort, raftPort, m, join)
 	log.Fatal(n.ListenAndServe())
 }
