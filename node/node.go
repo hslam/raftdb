@@ -104,23 +104,12 @@ func NewNode(dataDir string, host string, httpPort, rpcPort, raftPort int, membe
 	n.raftNode.LeaderChange(func() {
 		n.resetLeader()
 	})
-	n.rum.Group("/cluster", func(m *rum.Mux) {
-		m.HandleFunc("/status", n.statusHandler).All()
-		m.HandleFunc("/leader", n.leaderHandler).All()
-		m.HandleFunc("/ready", n.readyHandler).All()
-		m.HandleFunc("/address", n.addressHandler).All()
-		m.HandleFunc("/isleader", n.isLeaderHandler).All()
-		m.HandleFunc("/peers", n.peersHandler).All()
-		m.HandleFunc("/members", n.membersHandler).All()
-	})
-	n.rum.HandleFunc("/db/:key", n.leaderHandle(n.getHandler)).GET()
-	n.rum.HandleFunc("/db/:key", n.leaderHandle(n.setHandler)).POST()
 	return n
 }
 
 func (n *Node) ListenAndServe() error {
 	n.raftNode.Start()
-	log.Println("HTTP listening at:", n.uri())
+	log.Println("HTTP listening at:", fmt.Sprintf("http://%s:%d", n.host, n.httpPort))
 	log.Println("RPC listening at:", fmt.Sprintf("%s:%d", n.host, n.rpcPort))
 	service := new(Service)
 	service.node = n
@@ -133,7 +122,18 @@ func (n *Node) ListenAndServe() error {
 	go func() {
 		fmt.Println("raftdb.node.rpc :", n.rpcServer.Listen("tcp", fmt.Sprintf(":%d", n.rpcPort), codec))
 	}()
-	n.rum.SetFast(true)
+	n.rum.Recovery(rum.Recovery)
+	n.rum.Group("/cluster", func(m *rum.Mux) {
+		m.HandleFunc("/status", n.statusHandler).All()
+		m.HandleFunc("/leader", n.leaderHandler).All()
+		m.HandleFunc("/ready", n.readyHandler).All()
+		m.HandleFunc("/address", n.addressHandler).All()
+		m.HandleFunc("/isleader", n.isLeaderHandler).All()
+		m.HandleFunc("/peers", n.peersHandler).All()
+		m.HandleFunc("/members", n.membersHandler).All()
+	})
+	n.rum.HandleFunc("/db/:key", n.leaderHandle(n.getHandler)).GET()
+	n.rum.HandleFunc("/db/:key", n.leaderHandle(n.setHandler)).POST()
 	return n.rum.Run(fmt.Sprintf(":%d", n.httpPort))
 }
 
@@ -143,10 +143,6 @@ func (n *Node) InitRPCProxy(MaxConnsPerHost int, MaxIdleConnsPerHost int) {
 		MaxIdleConnsPerHost: MaxIdleConnsPerHost,
 		Options:             &rpc.Options{Network: network, Codec: codec},
 	}
-}
-
-func (n *Node) uri() string {
-	return fmt.Sprintf("http://%s:%d", n.host, n.httpPort)
 }
 
 func (n *Node) resetLeader() {
@@ -197,10 +193,6 @@ func (n *Node) leaderHandle(hander http.HandlerFunc) http.HandlerFunc {
 }
 
 func (n *Node) setHandler(w http.ResponseWriter, req *http.Request) {
-	defer func() {
-		if err := recover(); err != nil {
-		}
-	}()
 	params := n.rum.Params(req)
 	b, err := ioutil.ReadAll(req.Body)
 	if err != nil {
@@ -224,10 +216,6 @@ func (n *Node) setHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func (n *Node) getHandler(w http.ResponseWriter, req *http.Request) {
-	defer func() {
-		if err := recover(); err != nil {
-		}
-	}()
 	params := n.rum.Params(req)
 	if ok := n.raftNode.ReadIndex(); ok {
 		value := n.db.Get(params["key"])
@@ -243,10 +231,6 @@ type Status struct {
 }
 
 func (n *Node) statusHandler(w http.ResponseWriter, req *http.Request) {
-	defer func() {
-		if err := recover(); err != nil {
-		}
-	}()
 	status := &Status{
 		IsLeader: n.raftNode.IsLeader(),
 		Leader:   n.raftNode.Leader(),
@@ -257,50 +241,26 @@ func (n *Node) statusHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func (n *Node) leaderHandler(w http.ResponseWriter, req *http.Request) {
-	defer func() {
-		if err := recover(); err != nil {
-		}
-	}()
 	w.Write([]byte(n.raftNode.Leader()))
 }
 
 func (n *Node) readyHandler(w http.ResponseWriter, req *http.Request) {
-	defer func() {
-		if err := recover(); err != nil {
-		}
-	}()
 	n.render.JSON(w, req, n.raftNode.Ready(), http.StatusOK)
 }
 
 func (n *Node) isLeaderHandler(w http.ResponseWriter, req *http.Request) {
-	defer func() {
-		if err := recover(); err != nil {
-		}
-	}()
 	n.render.JSON(w, req, n.raftNode.IsLeader(), http.StatusOK)
 }
 
 func (n *Node) addressHandler(w http.ResponseWriter, req *http.Request) {
-	defer func() {
-		if err := recover(); err != nil {
-		}
-	}()
 	w.Write([]byte(n.raftNode.Address()))
 }
 
 func (n *Node) peersHandler(w http.ResponseWriter, req *http.Request) {
-	defer func() {
-		if err := recover(); err != nil {
-		}
-	}()
 	n.render.JSON(w, req, n.raftNode.Peers(), http.StatusOK)
 }
 
 func (n *Node) membersHandler(w http.ResponseWriter, req *http.Request) {
-	defer func() {
-		if err := recover(); err != nil {
-		}
-	}()
 	members := n.raftNode.Peers()
 	members = append(members, n.raftNode.Address())
 	n.render.JSON(w, req, members, http.StatusOK)
