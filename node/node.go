@@ -21,7 +21,7 @@ const (
 	network             = "tcp"
 	codec               = "pb"
 	MaxConnsPerHost     = 1
-	MaxIdleConnsPerHost = 0
+	MaxIdleConnsPerHost = 1
 )
 
 var (
