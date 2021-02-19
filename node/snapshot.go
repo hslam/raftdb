@@ -4,7 +4,6 @@
 package node
 
 import (
-	"encoding/json"
 	"github.com/hslam/raft"
 	"io"
 	"io/ioutil"
@@ -19,9 +18,7 @@ func NewSnapshot(db *DB) raft.Snapshot {
 }
 
 func (s *Snapshot) Save(w io.Writer) (int, error) {
-	var data map[string]string
-	data = s.db.Data()
-	raw, err := json.Marshal(data)
+	raw, err := s.db.Data()
 	if err != nil {
 		return 0, err
 	}
@@ -29,15 +26,10 @@ func (s *Snapshot) Save(w io.Writer) (int, error) {
 }
 
 func (s *Snapshot) Recover(r io.Reader) (int, error) {
-	var data map[string]string
 	raw, err := ioutil.ReadAll(r)
 	if err != nil {
 		return len(raw), err
 	}
-	err = json.Unmarshal(raw, &data)
-	if err != nil {
-		return len(raw), err
-	}
-	s.db.SetData(data)
-	return len(raw), nil
+	err = s.db.SetData(raw)
+	return len(raw), err
 }

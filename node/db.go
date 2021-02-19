@@ -4,6 +4,7 @@
 package node
 
 import (
+	"encoding/json"
 	"sync"
 )
 
@@ -18,26 +19,33 @@ func newDB() *DB {
 	}
 }
 
-func (db *DB) Data() map[string]string {
+func (db *DB) Data() (raw []byte, err error) {
 	db.mutex.RLock()
-	defer db.mutex.RUnlock()
-	return db.data
+	raw, err = json.Marshal(db.data)
+	db.mutex.RUnlock()
+	return
 }
 
-func (db *DB) SetData(data map[string]string) {
-	db.mutex.RLock()
-	defer db.mutex.RUnlock()
-	db.data = data
+func (db *DB) SetData(raw []byte) (err error) {
+	var data map[string]string
+	err = json.Unmarshal(raw, &data)
+	if err == nil {
+		db.mutex.Lock()
+		db.data = data
+		db.mutex.Unlock()
+	}
+	return
 }
 
 func (db *DB) Set(key string, value string) {
 	db.mutex.Lock()
-	defer db.mutex.Unlock()
 	db.data[key] = value
+	db.mutex.Unlock()
 }
 
-func (db *DB) Get(key string) string {
+func (db *DB) Get(key string) (value string) {
 	db.mutex.RLock()
-	defer db.mutex.RUnlock()
-	return db.data[key]
+	value = db.data[key]
+	db.mutex.RUnlock()
+	return
 }
