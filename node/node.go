@@ -123,15 +123,6 @@ func (n *Node) ListenAndServe() error {
 		fmt.Println("raftdb.node.rpc :", n.rpcServer.Listen("tcp", fmt.Sprintf(":%d", n.rpcPort), codec))
 	}()
 	n.rum.Recovery(rum.Recovery)
-	n.rum.Group("/cluster", func(m *rum.Mux) {
-		m.HandleFunc("/status", n.statusHandler).All()
-		m.HandleFunc("/leader", n.leaderHandler).All()
-		m.HandleFunc("/ready", n.readyHandler).All()
-		m.HandleFunc("/address", n.addressHandler).All()
-		m.HandleFunc("/isleader", n.isLeaderHandler).All()
-		m.HandleFunc("/peers", n.peersHandler).All()
-		m.HandleFunc("/members", n.membersHandler).All()
-	})
 	n.rum.HandleFunc("/db/:key", n.leaderHandle(n.getHandler)).GET()
 	n.rum.HandleFunc("/db/:key", n.leaderHandle(n.setHandler)).POST()
 	return n.rum.Run(fmt.Sprintf(":%d", n.httpPort))
@@ -221,47 +212,4 @@ func (n *Node) getHandler(w http.ResponseWriter, req *http.Request) {
 		value := n.db.Get(params["key"])
 		w.Write([]byte(value))
 	}
-}
-
-type Status struct {
-	IsLeader bool     `json:"IsLeader,omitempty"`
-	Leader   string   `json:"Leader,omitempty"`
-	Address  string   `json:"Address,omitempty"`
-	Peers    []string `json:"Peers,omitempty"`
-}
-
-func (n *Node) statusHandler(w http.ResponseWriter, req *http.Request) {
-	status := &Status{
-		IsLeader: n.raftNode.IsLeader(),
-		Leader:   n.raftNode.Leader(),
-		Address:  n.raftNode.Address(),
-		Peers:    n.raftNode.Peers(),
-	}
-	n.render.JSON(w, req, status, http.StatusOK)
-}
-
-func (n *Node) leaderHandler(w http.ResponseWriter, req *http.Request) {
-	w.Write([]byte(n.raftNode.Leader()))
-}
-
-func (n *Node) readyHandler(w http.ResponseWriter, req *http.Request) {
-	n.render.JSON(w, req, n.raftNode.Ready(), http.StatusOK)
-}
-
-func (n *Node) isLeaderHandler(w http.ResponseWriter, req *http.Request) {
-	n.render.JSON(w, req, n.raftNode.IsLeader(), http.StatusOK)
-}
-
-func (n *Node) addressHandler(w http.ResponseWriter, req *http.Request) {
-	w.Write([]byte(n.raftNode.Address()))
-}
-
-func (n *Node) peersHandler(w http.ResponseWriter, req *http.Request) {
-	n.render.JSON(w, req, n.raftNode.Peers(), http.StatusOK)
-}
-
-func (n *Node) membersHandler(w http.ResponseWriter, req *http.Request) {
-	members := n.raftNode.Peers()
-	members = append(members, n.raftNode.Address())
-	n.render.JSON(w, req, members, http.StatusOK)
 }
