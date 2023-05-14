@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"github.com/hslam/handler/proxy"
 	"github.com/hslam/handler/render"
+	"github.com/hslam/log"
 	"github.com/hslam/raft"
 	"github.com/hslam/rpc"
 	"github.com/hslam/rum"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"sync"
 )
@@ -26,6 +26,7 @@ const (
 
 var (
 	setCommandPool *sync.Pool
+	logger         = log.New()
 )
 
 func init() {
@@ -34,6 +35,7 @@ func init() {
 			return &SetCommand{}
 		},
 	}
+	logger.SetPrefix("raftdb")
 }
 
 const LeaderPrefix = "LEADER:"
@@ -78,9 +80,9 @@ func NewNode(dataDir string, host string, httpPort, rpcPort, raftPort int, membe
 	}
 	n.raftNode, err = raft.NewNode(host, raftPort, n.dataDir, n.db, join, m)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
-	n.raftNode.SetLogLevel(0)
+	n.raftNode.SetLogLevel(raft.AllLogLevel)
 	n.raftNode.RegisterCommand(&SetCommand{})
 	n.raftNode.SetSnapshot(NewSnapshot(n.db))
 	n.raftNode.SetSyncTypes([]*raft.SyncType{
@@ -98,7 +100,7 @@ func NewNode(dataDir string, host string, httpPort, rpcPort, raftPort int, membe
 		RPC:  fmt.Sprintf("%s:%d", host, rpcPort),
 	})
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 	n.raftNode.SetNodeMeta(n.raftNode.Address(), meta)
 	n.raftNode.LeaderChange(func() {
@@ -109,8 +111,8 @@ func NewNode(dataDir string, host string, httpPort, rpcPort, raftPort int, membe
 
 func (n *Node) ListenAndServe() error {
 	n.raftNode.Start()
-	log.Println("HTTP listening at:", fmt.Sprintf("http://%s:%d", n.host, n.httpPort))
-	log.Println("RPC listening at:", fmt.Sprintf("%s:%d", n.host, n.rpcPort))
+	logger.Infoln("HTTP listening at:", fmt.Sprintf("http://%s:%d", n.host, n.httpPort))
+	logger.Infoln("RPC listening at:", fmt.Sprintf("%s:%d", n.host, n.rpcPort))
 	service := new(Service)
 	service.node = n
 	n.rpcServer = rpc.NewServer()
