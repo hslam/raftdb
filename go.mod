@@ -7,8 +7,8 @@ require (
 	github.com/hslam/code v1.0.2-0.20210610150014-db5f483caa02
 	github.com/hslam/handler v0.0.2
 	github.com/hslam/log v1.0.4
-	github.com/hslam/raft v0.0.0-20230514012716-fc05627f6677
-	github.com/hslam/rpc v0.0.5-0.20230513104650-013f461d5599
+	github.com/hslam/raft v0.0.0-20230514032102-522e6090bcbc
+	github.com/hslam/rpc v0.0.5-0.20230514031537-46c501a434cb
 	github.com/hslam/rum v0.0.4
 )
 
