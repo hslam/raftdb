@@ -5,11 +5,11 @@ go 1.20
 require (
 	github.com/hslam/atomic v1.0.0
 	github.com/hslam/code v1.0.2-0.20210610150014-db5f483caa02
-	github.com/hslam/handler v0.0.2
+	github.com/hslam/handler v0.0.3-0.20210524144833-05ad6d50a2cb
 	github.com/hslam/log v1.0.4
-	github.com/hslam/raft v0.0.0-20230514032102-522e6090bcbc
-	github.com/hslam/rpc v0.0.5-0.20230514031537-46c501a434cb
-	github.com/hslam/rum v0.0.4
+	github.com/hslam/raft v0.0.0-20230514093921-a345e3baf212
+	github.com/hslam/rpc v0.0.5-0.20230514093656-a41c4ff92cca
+	github.com/hslam/rum v0.0.5-0.20230514094423-c9bf841fdec2
 )
 
 require (
@@ -18,13 +18,13 @@ require (
 	github.com/hslam/inproc v0.0.0-20210912032833-46957e53529f // indirect
 	github.com/hslam/lru v0.0.2 // indirect
 	github.com/hslam/mmap v1.0.0 // indirect
-	github.com/hslam/netpoll v0.0.4-0.20230219164802-be4599214e92 // indirect
-	github.com/hslam/request v0.0.2 // indirect
-	github.com/hslam/response v0.0.1 // indirect
+	github.com/hslam/netpoll v0.0.4-0.20230514092318-c286d2b379aa // indirect
+	github.com/hslam/request v0.0.3-0.20210611154049-b6a2b5ff3af6 // indirect
+	github.com/hslam/response v0.0.2-0.20210701170805-d45009729528 // indirect
 	github.com/hslam/reuse v0.0.0-20230219162114-9a3f8d1f9550 // indirect
 	github.com/hslam/scheduler v0.0.0-20211028175315-641598104976 // indirect
 	github.com/hslam/sendfile v1.0.1 // indirect
-	github.com/hslam/socket v0.0.4-0.20230219170335-6e5f0a7ef461 // indirect
+	github.com/hslam/socket v0.0.4-0.20230514093322-630f0a8c3413 // indirect
 	github.com/hslam/sortedlist v1.0.0 // indirect
 	github.com/hslam/splice v1.0.3 // indirect
 	github.com/hslam/tar v0.0.2 // indirect
